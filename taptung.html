@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tung Tung Sahur Tap Game</title>
+    <script src="https://neynar.com/sdk/farcaster.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        #game-container {
+            text-align: center;
+        }
+
+        #tap-image {
+            width: 200px;
+            height: 200px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        #tap-image:active {
+            transform: scale(0.95);
+        }
+
+        #score {
+            font-size: 24px;
+            margin: 20px 0;
+        }
+
+        #connect-wallet {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #6c5ce7;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <button id="connect-wallet">Connect Farcaster Wallet</button>
+        <div id="game" class="hidden">
+            <h1>Tung Tung Sahur Tap Game</h1>
+            <p id="score">Points: 0 / 100</p>
+            <img id="tap-image" src="tung-tung-sahur.jpg" alt="Tung Tung Sahur">
+            <p id="daily-limit" class="hidden">Daily limit reached! Come back tomorrow!</p>
+        </div>
+    </div>
+
+    <script>
+        let points = 0;
+        let isConnected = false;
+        let dailyLimitReached = false;
+
+        // Check if user has reached daily limit
+        const checkDailyLimit = () => {
+            const today = new Date().toDateString();
+            const lastPlayed = localStorage.getItem('lastPlayed');
+            const dailyPoints = parseInt(localStorage.getItem('dailyPoints') || 0);
+
+            if (lastPlayed === today && dailyPoints >= 100) {
+                dailyLimitReached = true;
+                document.getElementById('daily-limit').classList.remove('hidden');
+                document.getElementById('tap-image').style.pointerEvents = 'none';
+            } else if (lastPlayed !== today) {
+                localStorage.setItem('lastPlayed', today);
+                localStorage.setItem('dailyPoints', '0');
+                dailyLimitReached = false;
+            }
+        };
+
+        // Initialize Farcaster client
+        const farcaster = new Farcaster();
+
+        document.getElementById('connect-wallet').addEventListener('click', async () => {
+            try {
+                await farcaster.connect();
+                isConnected = true;
+                document.getElementById('connect-wallet').classList.add('hidden');
+                document.getElementById('game').classList.remove('hidden');
+                checkDailyLimit();
+            } catch (error) {
+                console.error('Failed to connect wallet:', error);
+                alert('Failed to connect wallet. Please try again.');
+            }
+        });
+
+        document.getElementById('tap-image').addEventListener('click', () => {
+            if (!isConnected || dailyLimitReached) return;
+
+            points++;
+            const dailyPoints = parseInt(localStorage.getItem('dailyPoints') || 0) + 1;
+            localStorage.setItem('dailyPoints', dailyPoints.toString());
+            
+            document.getElementById('score').textContent = `Points: ${dailyPoints} / 100`;
+
+            if (dailyPoints >= 100) {
+                dailyLimitReached = true;
+                document.getElementById('daily-limit').classList.remove('hidden');
+                document.getElementById('tap-image').style.pointerEvents = 'none';
+            }
+        });
+
+        // Check daily limit on page load
+        if (isConnected) {
+            checkDailyLimit();
+        }
+    </script>
+</body>
+</html>
+
+
